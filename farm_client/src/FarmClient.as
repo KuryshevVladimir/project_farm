@@ -1,5 +1,6 @@
 package {
     import flash.display.*;
+	import flash.geom.Point;
 	import flash.net.*;
 	import flash.events.*;
 	import flash.utils.*;
@@ -13,7 +14,8 @@ package {
 		
 		private var GameField:Sprite;
 		private var BackGround: Loader;
-		private var ToolBar:Sprite;		
+		private var ToolBar:Sprite;
+		private var MouseXY:Point; 
 		
 		//Состояния игры
 		private const GAME_INITIALIZE:uint = 0;		
@@ -30,6 +32,9 @@ package {
 		//Карта ф-ци в зависимости от состояния сокета
 		private var StateSockMap:Array;
 		
+		private var tx:TextField;
+		private var ldr:Loader;
+		
         public function FarmClient() {
             
 			Security.loadPolicyFile('xmlsocket://localhost:3000');												
@@ -43,11 +48,27 @@ package {
 			
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.align = StageAlign.TOP_LEFT;
+			stage.showDefaultContextMenu = false;
+			stage.addEventListener(Event.RESIZE, resizeDisplay);
+			stage.addEventListener(Event.MOUSE_LEAVE, leaveDisplay);			
 			
+			MouseXY = new Point;
 			GameField = new Sprite;
 			BackGround = new Loader;
+			GameField.addEventListener(MouseEvent.MOUSE_DOWN, mouseDown);  
+			GameField.addEventListener(MouseEvent.MOUSE_UP, mouseReleased);			
 			addChild(GameField);
 			GameField.addChild(BackGround);
+			
+			//для временного теста
+			tx = new TextField;
+			tx.text = '';
+			addChild(tx);
+			ldr = new Loader;
+			ldr.load(new URLRequest('C:/Users/Admin/Desktop/test_task_resource/clover/4.png'));
+			GameField.addChild(ldr);
+			ldr.x = 115;
+			ldr.y = 390;
 			
 			xmlSock = new XMLSocket;
 			xmlSock.addEventListener(Event.CONNECT, onXmlSocketConnect); 
@@ -113,11 +134,54 @@ package {
 				if (element.@name == 'BackGround')
 				{
 					event.target.readBytes(BinaryData, 0, element.@size_img);
-					BackGround.loadBytes(BinaryData);			
+					BackGround.loadBytes(BinaryData);
 				}
 			}
-			CurrGameState = GAME_PROCESS;
+			CurrGameState = GAME_PROCESS;			
 		}
+				
+		private function mouseDown(event:MouseEvent):void 
+		{ 								
+			MouseXY.x = event.localX;
+			MouseXY.y = event.localY;
+			
+			event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
+		}
+		
+		private function mouseMove(event:MouseEvent):void
+		{				
+			var x:int = event.stageX - MouseXY.x;
+			var y:int = event.stageY - MouseXY.y;						
+				
+			event.currentTarget.x = (x > 0) ? 0 : x;
+			event.currentTarget.y = (y > 0) ? 0 : y;
+				
+			if (stage.stageWidth - event.currentTarget.x > event.currentTarget.width) event.currentTarget.x = stage.stageWidth - event.currentTarget.width;
+			if (stage.stageHeight - event.currentTarget.y > event.currentTarget.height) event.currentTarget.y = stage.stageHeight - event.currentTarget.height;				
+		}
+			
+		private function mouseReleased(event:MouseEvent):void 
+		{												
+			if (GameField.hasEventListener(MouseEvent.MOUSE_MOVE))
+					GameField.removeEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
+		}
+		
+		private function resizeDisplay(event:Event):void 
+		{ 		
+			if (GameField.x != 0 || GameField.y != 0)
+			{
+				if (stage.stageWidth - GameField.x > GameField.width) GameField.x = stage.stageWidth - GameField.width;
+				if (stage.stageHeight - GameField.y > GameField.height) GameField.y = stage.stageHeight - GameField.height;
+				if (stage.stageWidth > GameField.width) stage.stageWidth = GameField.width;
+				if (stage.stageHeight > GameField.height) stage.stageHeight = GameField.height; 				
+			}	
+		}
+		
+		private function leaveDisplay(event:Event):void
+		{			
+			mouseReleased(null);
+		}
+		
 			
     }
 }
