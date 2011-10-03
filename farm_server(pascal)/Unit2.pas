@@ -23,6 +23,7 @@ type
     cbTblChoose: TComboBox;
     Panel: TPanel;
     Splitter: TSplitter;
+    Textures: TSimpleDataSet;
     procedure ServerSocketClientConnect(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure ServerSocketClientDisconnect(Sender: TObject;
@@ -67,6 +68,7 @@ begin
   SQLConnection.Connected:= true;
   SimpleDataSet.DataSet.CommandText:= 'show tables';
   SimpleDataSet.Open;
+  Textures.Open;
 
   while not SimpleDataSet.Eof do
   begin
@@ -106,8 +108,11 @@ end;
 procedure TForm2.ServerSocketClientRead(Sender: TObject;
   Socket: TCustomWinSocket);
 var
-  TempString: string;
+  TempString, XMLText: AnsiString;
   Stream: TMemoryStream;
+  ByteArray: array[0..3] of byte;
+  SizeXMLText:Integer absolute ByteArray;
+  Res:Boolean;
 begin
   TempString:= Trim(Socket.ReceiveText);
   RichEdit.Lines.Append(TempString);
@@ -115,15 +120,47 @@ begin
   if TempString = '<policy-file-request/>' then
   begin
     Socket.SendText(policyInfo);
-  end
-    else
+  end;
+
+  if TempString = '<game-initialize/>' then
+  begin
+    XMLText:= '<textures>';
+    Textures.First;
+    while not Textures.Eof do
+    begin
+      XMLText:= XMLText + Format('<texture name="%s" size_img="%s" />', [Textures.FieldByName('name_img').AsString, Textures.FieldByName('size_img').AsString]);
+      Textures.Next;
+    end;
+    XMLText:= XMLText + '</textures>';
+    SizeXMLText:= Length(XMLText);
+
+    try
+      Stream:= TMemoryStream.Create;
+      Stream.Write(ByteArray[0], SizeOf(SizeXMLText));
+      Stream.Write(XMLText[1], SizeXMLText);
+
+      Textures.First;
+      while not Textures.Eof do
+      begin
+        Stream.CopyFrom(Textures.CreateBlobStream(Textures.FieldByName('image'), bmRead), 0);
+        Textures.Next;
+      end;
+
+      Stream.Position:= 0;
+      Res:= Socket.SendStream(Stream);
+    except
+      Stream.Free;
+    end;
+  end;
+  {  else
   begin
     Stream:= TMemoryStream.Create;
     TBlobField(SimpleDataSet.FieldByName('image')).SaveToStream(Stream);
     Stream.Position:= 0;
-    Socket.SendStream(Stream);
+    Socket.SendStream(SimpleDataSet.CreateBlobStream(SimpleDataSet.FieldByName('image'), bmRead));
+    Stream.Write(XMLText[1],Length(XMLText));
     Stream.Free;
-  end;
+  end;}
 
   //    Socket.SendText('Send Msg' + CHR(0));
   //    TempString:= Chr(0);

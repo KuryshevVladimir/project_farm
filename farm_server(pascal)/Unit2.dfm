@@ -142,6 +142,7 @@ object Form2: TForm2
       'ErrorResourceFile='
       'ServerCharSet=WIN1251')
     VendorLib = 'LIBMYSQL.dll'
+    Connected = True
     Left = 24
     Top = 72
   end
@@ -174,5 +175,17 @@ object Form2: TForm2
     OnClientRead = ServerSocketClientRead
     Left = 88
     Top = 16
+  end
+  object Textures: TSimpleDataSet
+    Aggregates = <>
+    Connection = SQLConnection
+    DataSet.CommandText = 
+      'SELECT id, image, name_img, description, OCTET_LENGTH(image) AS ' +
+      'size_img FROM `textures` ORDER BY id'
+    DataSet.MaxBlobSize = -1
+    DataSet.Params = <>
+    Params = <>
+    Left = 208
+    Top = 72
   end
 end
