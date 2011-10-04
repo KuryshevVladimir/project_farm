@@ -6,6 +6,7 @@ package {
 	import flash.utils.*;
 	import flash.text.TextField;
 	import flash.system.Security;
+	import Button.FarmButton;
 
     public class FarmClient extends Sprite {
 
@@ -31,6 +32,10 @@ package {
 		
 		//Карта ф-ци в зависимости от состояния сокета
 		private var StateSockMap:Array;
+		
+		private var PlantTree:FarmButton;
+		private var GrownUpTree:FarmButton;
+		private var HarvestTree:FarmButton;
 		
 		private var tx:TextField;
 		private var ldr:Loader;
@@ -69,6 +74,19 @@ package {
 			GameField.addChild(ldr);
 			ldr.x = 115;
 			ldr.y = 390;
+						
+			PlantTree = new FarmButton('Посадить', 70, 22, 0xf5deb3);
+			PlantTree.x = 10;
+			PlantTree.y = 20;			
+			GrownUpTree = new FarmButton('Вырастить', 70, 22, 0xf5deb3);
+			GrownUpTree.x = 10;
+			GrownUpTree.y = PlantTree.y + 40;			
+			HarvestTree = new FarmButton('Собрать', 70, 22, 0xf5deb3);
+			HarvestTree.x = 10;
+			HarvestTree.y = GrownUpTree.y + 40;
+			addChild(PlantTree);
+			addChild(GrownUpTree);			
+			addChild(HarvestTree);
 			
 			xmlSock = new XMLSocket;
 			xmlSock.addEventListener(Event.CONNECT, onXmlSocketConnect); 
@@ -181,8 +199,7 @@ package {
 		{			
 			mouseReleased(null);
 		}
-		
-			
+					
     }
 }
 
