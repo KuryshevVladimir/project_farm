@@ -67,26 +67,31 @@ package {
 			
 			//для временного теста
 			tx = new TextField;
+			tx.x = 100;
 			tx.text = '';
-			addChild(tx);
+			//addChild(tx);
 			ldr = new Loader;
 			ldr.load(new URLRequest('C:/Users/Admin/Desktop/test_task_resource/clover/4.png'));
 			GameField.addChild(ldr);
 			ldr.x = 115;
 			ldr.y = 390;
-						
-			PlantTree = new FarmButton('Посадить', 70, 22, 0xf5deb3);
+				
+			ToolBar = new Sprite;						
+			ToolBar.addEventListener(MouseEvent.MOUSE_UP, mouseReleased);
+			addChild(ToolBar);
+			
+			PlantTree = new FarmButton('Посадить', 70, 22, 0xf5deb3);			
 			PlantTree.x = 10;
 			PlantTree.y = 20;			
-			GrownUpTree = new FarmButton('Вырастить', 70, 22, 0xf5deb3);
+			GrownUpTree = new FarmButton('Вырастить', 70, 22, 0xf5deb3);			
 			GrownUpTree.x = 10;
 			GrownUpTree.y = PlantTree.y + 40;			
-			HarvestTree = new FarmButton('Собрать', 70, 22, 0xf5deb3);
+			HarvestTree = new FarmButton('Собрать', 70, 22, 0xf5deb3);			
 			HarvestTree.x = 10;
 			HarvestTree.y = GrownUpTree.y + 40;
-			addChild(PlantTree);
-			addChild(GrownUpTree);			
-			addChild(HarvestTree);
+			ToolBar.addChild(PlantTree);
+			ToolBar.addChild(GrownUpTree);			
+			ToolBar.addChild(HarvestTree);
 			
 			xmlSock = new XMLSocket;
 			xmlSock.addEventListener(Event.CONNECT, onXmlSocketConnect); 
@@ -148,10 +153,10 @@ package {
 			trace(receiveXML.toString());
 			
 			for each (var element:XML in receiveXML.elements()) 
-			{ 								
+			{ 		
+				event.target.readBytes(BinaryData, 0, element.@size_img);
 				if (element.@name == 'BackGround')
-				{
-					event.target.readBytes(BinaryData, 0, element.@size_img);
+				{					
 					BackGround.loadBytes(BinaryData);
 				}
 			}
@@ -160,8 +165,8 @@ package {
 				
 		private function mouseDown(event:MouseEvent):void 
 		{ 								
-			MouseXY.x = event.localX;
-			MouseXY.y = event.localY;
+			MouseXY.x = event.currentTarget.mouseX;
+			MouseXY.y = event.currentTarget.mouseY;
 			
 			event.currentTarget.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
 		}
