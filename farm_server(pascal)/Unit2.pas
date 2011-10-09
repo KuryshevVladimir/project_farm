@@ -24,6 +24,7 @@ type
     Panel: TPanel;
     Splitter: TSplitter;
     Textures: TSimpleDataSet;
+    PlantsType: TSimpleDataSet;
     procedure ServerSocketClientConnect(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure ServerSocketClientDisconnect(Sender: TObject;
@@ -69,6 +70,7 @@ begin
   SimpleDataSet.DataSet.CommandText:= 'show tables';
   SimpleDataSet.Open;
   Textures.Open;
+  PlantsType.Open;
 
   while not SimpleDataSet.Eof do
   begin
@@ -107,12 +109,43 @@ end;
 
 procedure TForm2.ServerSocketClientRead(Sender: TObject;
   Socket: TCustomWinSocket);
+
+  function DeleteLineBreaks(const S: string): string;
+  var
+    Source, SourceEnd: PChar;
+  begin
+    Source := Pointer(S);
+    SourceEnd := Source + Length(S);
+    while Source < SourceEnd do
+    begin
+      case Source^ of
+        #0: Source^ := #32;
+        #10: Source^ := #32;
+        #13: Source^ := #32;
+      end;
+      Inc(Source);
+    end;
+    Result := S;
+  end;
+
+  function getChar(const S: string): string;
+  var
+    I: Integer;
+  begin
+    Result:= '';
+    for I := 1 to Length(S) do
+    begin
+      Result:= Result + '#' + IntToStr(Ord(S[I]));
+    end;
+  end;
+
 var
   TempString, XMLText: AnsiString;
   Stream: TMemoryStream;
   ByteArray: array[0..3] of byte;
   SizeXMLText:Integer absolute ByteArray;
   Res:Boolean;
+  ReceiveXML: TXMLDocument;
 begin
   TempString:= Trim(Socket.ReceiveText);
   RichEdit.Lines.Append(TempString);
@@ -124,14 +157,21 @@ begin
 
   if TempString = '<game-initialize/>' then
   begin
-    XMLText:= '<textures>';
+    XMLText:= '<initialize>';
     Textures.First;
     while not Textures.Eof do
     begin
       XMLText:= XMLText + Format('<texture name="%s" size_img="%s" />', [Textures.FieldByName('name_img').AsString, Textures.FieldByName('size_img').AsString]);
       Textures.Next;
     end;
-    XMLText:= XMLText + '</textures>';
+
+    PlantsType.First;
+    while not PlantsType.Eof do
+    begin
+      XMLText:= XMLText + Format('<tree_type id="%s" name="%s" />', [PlantsType.FieldByName('id').AsString, PlantsType.FieldByName('name').AsString]);
+      PlantsType.Next;
+    end;
+    XMLText:= XMLText + '</initialize>';
     SizeXMLText:= Length(XMLText);
 
     try
@@ -152,19 +192,15 @@ begin
       Stream.Free;
     end;
   end;
-  {  else
-  begin
-    Stream:= TMemoryStream.Create;
-    TBlobField(SimpleDataSet.FieldByName('image')).SaveToStream(Stream);
-    Stream.Position:= 0;
-    Socket.SendStream(SimpleDataSet.CreateBlobStream(SimpleDataSet.FieldByName('image'), bmRead));
-    Stream.Write(XMLText[1],Length(XMLText));
-    Stream.Free;
-  end;}
 
-  //    Socket.SendText('Send Msg' + CHR(0));
-  //    TempString:= Chr(0);
-  //    Stream.Write(TempString[1], 1);
+  if Pos('<tree-grown>', TempString) <> 0 then
+  begin
+    ReceiveXML:= TXMLDocument.Create(Self);
+    ReceiveXML.XML.Text:= TempString;
+    ReceiveXML.Active:= True;
+    RichEdit.Lines.Append(VarToStr(ReceiveXML.DocumentElement.ChildNodes['tree_type'].Attributes['id']));
+    ReceiveXML.Free;
+  end;
 
 end;
 

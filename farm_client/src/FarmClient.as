@@ -7,6 +7,7 @@ package {
 	import flash.text.TextField;
 	import flash.system.Security;
 	import Button.FarmButton;
+	import Form.GrownUpPanel;
 
     public class FarmClient extends Sprite {
 
@@ -36,6 +37,10 @@ package {
 		private var PlantTree:FarmButton;
 		private var GrownUpTree:FarmButton;
 		private var HarvestTree:FarmButton;
+		
+		private var GrownUpForm:GrownUpPanel;
+		private var TreeType:Array;
+		private var ChoosedTree:Object;
 		
 		private var tx:TextField;
 		private var ldr:Loader;
@@ -67,9 +72,9 @@ package {
 			
 			//для временного теста
 			tx = new TextField;
-			tx.x = 100;
+			tx.x = 200;
 			tx.text = '';
-			//addChild(tx);
+			addChild(tx);
 			ldr = new Loader;
 			ldr.load(new URLRequest('C:/Users/Admin/Desktop/test_task_resource/clover/4.png'));
 			GameField.addChild(ldr);
@@ -80,7 +85,8 @@ package {
 			ToolBar.addEventListener(MouseEvent.MOUSE_UP, mouseReleased);
 			addChild(ToolBar);
 			
-			PlantTree = new FarmButton('Посадить', 70, 22, 0xf5deb3);			
+			PlantTree = new FarmButton('Посадить', 70, 22, 0xf5deb3);
+			PlantTree.addEventListener(MouseEvent.CLICK, growmTree);
 			PlantTree.x = 10;
 			PlantTree.y = 20;			
 			GrownUpTree = new FarmButton('Вырастить', 70, 22, 0xf5deb3);			
@@ -149,13 +155,20 @@ package {
 			{
 				SizeText += event.target.readUnsignedByte() * Math.pow(256, i);
 			}
-			var receiveXML:XML = new XML(event.target.readUTFBytes(SizeText));
+			event.target.readBytes(BinaryData, 0, SizeText);
+			var receiveXML:XML = new XML(BinaryData.readMultiByte(BinaryData.length, 'windows-1251'));			
 			trace(receiveXML.toString());
 			
-			for each (var element:XML in receiveXML.elements()) 
+			if (TreeType == null) TreeType = new Array;
+			for each (var tree_type:XML in receiveXML.tree_type)
+			{								
+				TreeType.push({id:tree_type.@id, name:tree_type.@name});
+			}			
+			
+			for each (var texture:XML in receiveXML.texture) 
 			{ 		
-				event.target.readBytes(BinaryData, 0, element.@size_img);
-				if (element.@name == 'BackGround')
+				event.target.readBytes(BinaryData, 0, texture.@size_img);
+				if (texture.@name == 'BackGround')
 				{					
 					BackGround.loadBytes(BinaryData);
 				}
@@ -164,7 +177,17 @@ package {
 		}
 				
 		private function mouseDown(event:MouseEvent):void 
-		{ 								
+		{ 																				
+			if (ChoosedTree != null)
+			{				
+				binSock.writeUTFBytes('<tree-grown>');
+				binSock.writeUTFBytes('<tree_type id="' + ChoosedTree.id + '" x="' + event.currentTarget.mouseX + '" y="' + event.currentTarget.mouseY + '" />');
+				binSock.writeUTFBytes('</tree-grown>');				
+				binSock.flush();
+				ChoosedTree = null;
+				return;
+			}
+			
 			MouseXY.x = event.currentTarget.mouseX;
 			MouseXY.y = event.currentTarget.mouseY;
 			
@@ -197,14 +220,46 @@ package {
 				if (stage.stageHeight - GameField.y > GameField.height) GameField.y = stage.stageHeight - GameField.height;
 				if (stage.stageWidth > GameField.width) stage.stageWidth = GameField.width;
 				if (stage.stageHeight > GameField.height) stage.stageHeight = GameField.height; 				
-			}	
+			}
+			if (GrownUpForm != null) centerObject(GrownUpForm);
 		}
 		
 		private function leaveDisplay(event:Event):void
 		{			
 			mouseReleased(null);
 		}
-					
+		
+		private function growmTree(event:MouseEvent):void
+		{
+			if (GrownUpForm == null)
+			{
+				GrownUpForm = new GrownUpPanel(TreeType, 200, -1, 25, 0xDCDCDC);
+				GrownUpForm.addEventListener(MouseEvent.MOUSE_DOWN, grownUpFormClick);
+			}	
+			centerObject(GrownUpForm);
+			addChild(GrownUpForm);
+		}
+		
+		private function centerObject(sprite:Sprite):void
+		{
+			sprite.x = stage.stageWidth/2 - sprite.width/2;
+			sprite.y = stage.stageHeight/2 - sprite.height/2;
+		}
+		
+		private function grownUpFormClick(event:MouseEvent):void
+		{			
+			ChoosedTree = null;
+			for (var i:uint = 0; i < TreeType.length; i++)
+			{
+				if (TreeType[i].textField == event.target)
+				{
+					ChoosedTree = TreeType[i];
+					removeChild(GrownUpForm);
+					break;
+				}
+			}
+		}
+		
     }
 }
 

@@ -140,9 +140,8 @@ object Form2: TForm2
       'Encrypted=False'
       'BlobSize=-1'
       'ErrorResourceFile='
-      'ServerCharSet=WIN1251')
+      'ServerCharSet=UTF8')
     VendorLib = 'LIBMYSQL.dll'
-    Connected = True
     Left = 24
     Top = 72
   end
@@ -186,6 +185,16 @@ object Form2: TForm2
     DataSet.Params = <>
     Params = <>
     Left = 208
+    Top = 72
+  end
+  object PlantsType: TSimpleDataSet
+    Aggregates = <>
+    Connection = SQLConnection
+    DataSet.CommandText = 'select * from `plants_type`'
+    DataSet.MaxBlobSize = -1
+    DataSet.Params = <>
+    Params = <>
+    Left = 264
     Top = 72
   end
 end
